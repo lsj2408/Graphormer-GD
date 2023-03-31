@@ -25,22 +25,38 @@ class GraphormerPYGDataset(Dataset):
         train_set=None,
         valid_set=None,
         test_set=None,
-        with_resistance_distance=False
+        with_resistance_distance=False,
+        with_airports=False,
     ):
         self.dataset = dataset
+        self.with_resistance_distance = with_resistance_distance
+        self.with_airports = with_airports
         if self.dataset is not None:
-            self.num_data = len(self.dataset)
+            if with_airports:
+                self.num_data = self.dataset.data.y.shape[0]
+            else:
+                self.num_data = len(self.dataset)
         self.seed = seed
-        self.preprocess_func = preprocess_item if not with_resistance_distance else preprocess_item_with_resistance_distance
+
+        if with_resistance_distance:
+            self.preprocess_func = preprocess_item_with_resistance_distance
+        else:
+            self.preprocess_func = preprocess_item
+
         if train_idx is None and train_set is None:
             train_valid_idx, test_idx = train_test_split(
                 np.arange(self.num_data),
                 test_size=self.num_data // 10,
                 random_state=seed,
             )
-            train_idx, valid_idx = train_test_split(
-                train_valid_idx, test_size=self.num_data // 5, random_state=seed
-            )
+            if with_airports:
+                train_idx, valid_idx = train_test_split(
+                    train_valid_idx, test_size=self.num_data // 10, random_state=seed
+                )
+            else:
+                train_idx, valid_idx = train_test_split(
+                    train_valid_idx, test_size=self.num_data // 5, random_state=seed
+                )
             self.train_idx = torch.from_numpy(train_idx)
             self.valid_idx = torch.from_numpy(valid_idx)
             self.test_idx = torch.from_numpy(test_idx)
@@ -97,10 +113,16 @@ class GraphormerPYGDataset(Dataset):
     @lru_cache(maxsize=16)
     def __getitem__(self, idx):
         if isinstance(idx, int):
-            item = self.dataset[idx]
-            item.idx = idx
-            item.y = item.y.reshape(-1)
-            return self.preprocess_func(item)
+            if self.with_airports:
+                item = self.dataset.get(0)
+                item.idx = self.indices()[idx]
+                item.y = item.y.reshape(-1)
+            else:
+                item = self.dataset[idx]
+                item.idx = idx
+                item.y = item.y.reshape(-1)
+                item = self.preprocess_func(item)
+            return item
         else:
             raise TypeError("index to a GraphormerPYGDataset can only be an integer.")
 

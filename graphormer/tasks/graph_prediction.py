@@ -27,6 +27,8 @@ from ..data.dataset import (
     TargetDataset,
     GraphormerDataset,
     EpochShuffleDataset,
+    PygAirPreprocessedData,
+    SyntheticPreprocessedData
 )
 
 import torch
@@ -46,6 +48,21 @@ class GraphPredictionConfig(FairseqDataclass):
         default=False,
         metadata={"help": "use resistance distance"}
     )
+
+    with_airports: bool = field(
+        default=False,
+        metadata={"help": "run on airports datasets"}
+    )
+    with_synthetic_ap: bool = field(
+        default=False,
+        metadata={"help": "run on synthetic datasets for anticulation points detection"}
+    )
+
+    with_synthetic_bridge: bool = field(
+        default=False,
+        metadata={"help": "run on synthetic datasets for bridge detection"}
+    )
+
     dataset_name: str = field(
         default="pcqm4m",
         metadata={"help": "name of the dataset"},
@@ -156,11 +173,24 @@ class GraphPredictionTask(FairseqTask):
             else:
                 raise ValueError(f"dataset {cfg.dataset_name} is not found in customized dataset module {cfg.user_data_dir}")
         else:
-            self.dm = GraphormerDataset(
-                dataset_spec=cfg.dataset_name,
-                dataset_source=cfg.dataset_source,
-                seed=cfg.seed,
+            if cfg.with_airports:
+                self.dm = PygAirPreprocessedData(
+                dataset_name=self.cfg.dataset_name,
+                dataset_path=self.cfg.data_path,
+                seed=self.cfg.seed
             )
+            elif cfg.with_synthetic_ap or cfg.with_synthetic_bridge:
+                self.dm = SyntheticPreprocessedData(
+                    dataset_name=self.cfg.dataset_name,
+                    dataset_path=self.cfg.data_path,
+                    seed=self.cfg.seed
+                )
+            else:
+                self.dm = GraphormerDataset(
+                    dataset_spec=cfg.dataset_name,
+                    dataset_source=cfg.dataset_source,
+                    seed=cfg.seed,
+                )
 
     def __import_user_defined_datasets(self, dataset_dir):
         dataset_dir = dataset_dir.strip("/")
@@ -199,21 +229,33 @@ class GraphPredictionTask(FairseqTask):
             max_node=self.max_nodes(),
             multi_hop_max_dist=self.cfg.multi_hop_max_dist,
             spatial_pos_max=self.cfg.spatial_pos_max,
-            with_resistance_distance=self.cfg.with_resistance_distance
+            with_resistance_distance=self.cfg.with_resistance_distance,
+            with_airports=self.cfg.with_airports,
+            with_synthetic_ap=self.cfg.with_synthetic_ap,
+            with_synthetic_bridge=self.cfg.with_synthetic_bridge
         )
 
         data_sizes = np.array([self.max_nodes()] * len(batched_data))
 
         target = TargetDataset(batched_data)
 
-        dataset = NestedDictionaryDataset(
-            {
+        if self.with_synthetic_ap or self.with_synthetic_bridge:
+            dataset = NestedDictionaryDataset({
                 "nsamples": NumSamplesDataset(),
-                "net_input": {"batched_data": batched_data},
-                "target": target,
-            },
-            sizes=data_sizes,
-        )
+                "net_input": {
+                    "batched_data": batched_data
+                },
+                # "target": target
+            }, sizes=np.array([1] * len(batched_data)))
+        else:
+            dataset = NestedDictionaryDataset(
+                {
+                    "nsamples": NumSamplesDataset(),
+                    "net_input": {"batched_data": batched_data},
+                    "target": target,
+                },
+                sizes=data_sizes,
+            )
 
         if split == "train" and self.cfg.train_epoch_shuffle:
             dataset = EpochShuffleDataset(

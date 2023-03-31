@@ -7,7 +7,7 @@ This repository is the official implementation of "[[ICLR 2023 notable top-5%] R
 > Bohang Zhang\*, Shengjie Luo\*, Liwei Wang, Di He
 
 ## 🔥 News
-- **Upcoming**: Full code release (March 2023).
+- **2023.03**: Codebase cleanup & release.
 - **2023.01**: Our paper is accepted at ICLR 2023 and nominated as notable top 5%!
 
 ## Overview
