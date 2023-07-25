@@ -7,6 +7,7 @@ This repository is the official implementation of "[[ICLR 2023 notable top-5%] R
 > Bohang Zhang\*, Shengjie Luo\*, Liwei Wang, Di He
 
 ## 🔥 News
+- **2023.04**: Our paper receives the [ICLR 2023 Outstanding Paper Award](https://blog.iclr.cc/2023/03/21/announcing-the-iclr-2023-outstanding-paper-award-recipients/)!
 - **2023.03**: Codebase cleanup & release.
 - **2023.01**: Our paper is accepted at ICLR 2023 and nominated as notable top 5%!
 
