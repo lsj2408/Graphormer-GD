@@ -240,8 +240,9 @@ def calculate_resistance_distance_online(graph, N):
     g_cur_index = []
     for item in g_components_list:
         g_cur_index.extend(list(item.nodes))
-    g_resistance_matrix = g_resistance_matrix[g_cur_index, :]
-    g_resistance_matrix = g_resistance_matrix[:, g_cur_index]
+    ori_idx = np.arange(N)
+    g_resistance_matrix[g_cur_index, :] = g_resistance_matrix[ori_idx, :]
+    g_resistance_matrix[:, g_cur_index] = g_resistance_matrix[:, ori_idx]
 
     # resistance_distance = np.linalg.pinv(
     #     np.diag(adj.sum(axis=-1)) - adj + np.ones((N, N), dtype=np.float32) / N).astype(np.float32)

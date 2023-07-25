@@ -132,8 +132,9 @@ class ZINC_RD(InMemoryDataset):
                 g_cur_index = []
                 for item in g_components_list:
                     g_cur_index.extend(list(item.nodes))
-                g_resistance_matrix = g_resistance_matrix[g_cur_index, :]
-                g_resistance_matrix = g_resistance_matrix[:, g_cur_index]
+                ori_idx = np.arange(N)
+                g_resistance_matrix[g_cur_index, :] = g_resistance_matrix[ori_idx, :]
+                g_resistance_matrix[:, g_cur_index] = g_resistance_matrix[:, ori_idx]
 
                 if g_resistance_matrix.max() > N - 1:
                     print(f'error: {g_resistance_matrix}')
